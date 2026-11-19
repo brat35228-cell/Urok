@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="uk"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Урок 8-Б: Не спались!</title>
+<style>
+:root{--bg:#141a2e;--tx:#f5f6ff;--ac:#8b6cff;--ok:#38d996;--bad:#ff4d6d;--warn:#ffc23d;--pn:rgba(14,17,34,.78);color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141a2e}}
+:root[data-theme="dark"]{--bg:#141a2e}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--tx);font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+body{position:relative}
+#game{position:absolute;inset:0}#game canvas{display:block;width:100%;height:100%}
+#vig{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(255,30,70,.9))}
+#hud{position:absolute;left:8px;right:8px;top:8px;display:flex;flex-direction:column;gap:5px;pointer-events:none}
+.row{display:flex;align-items:center;gap:8px;background:linear-gradient(180deg,rgba(44,50,100,.72),rgba(14,17,34,.8));backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);box-shadow:0 4px 14px rgba(0,0,0,.35);border-radius:14px;padding:6px 10px;font-size:14px;font-weight:700}
+.bar{flex:1;height:10px;background:rgba(255,255,255,.14);border-radius:6px;overflow:hidden}.bar i{display:block;height:100%;width:0;border-radius:6px;transition:width .15s;box-shadow:0 0 10px currentColor}
+#st{align-self:center;padding:6px 14px;border-radius:20px;font-size:14px;font-weight:800;background:var(--pn)}
+#st.ok{color:var(--ok)}#st.warn{color:var(--warn)}#st.bad{color:var(--bad)}
+#toast{position:absolute;left:50%;top:34%;transform:translateX(-50%);max-width:86%;text-align:center;background:var(--pn);padding:10px 16px;border-radius:14px;font-weight:800;opacity:0;transition:opacity .25s;pointer-events:none}
+#bar{position:absolute;left:8px;right:8px;bottom:calc(10px + env(safe-area-inset-bottom,0px));display:flex;gap:8px}
+#bar>div{display:flex;gap:8px;width:100%}
+button{font:inherit;font-weight:800;color:var(--tx);background:linear-gradient(180deg,#363f7a,#222849);border:2px solid #4a55a0;box-shadow:0 4px 0 #121631,0 8px 18px rgba(0,0,0,.4);border-radius:18px;min-height:58px;flex:1;font-size:15px;touch-action:manipulation;transition:transform .08s}
+button small{display:block;font-size:11px;font-weight:600;opacity:.8}
+button.on,button.act{background:var(--ac);border-color:#b7a4ff}
+#hide{background:#4a2438;border-color:#a8405f}
+#wr,#ch{min-height:72px;font-size:17px}#ch{background:#4a3a14;border-color:#c99a2a}#ch.on{background:var(--warn);color:#222}
+#call{z-index:6;position:absolute;left:50%;top:52%;transform:translateX(-50%);background:#1f9d55;border-color:#6ee7a0;padding:14px 20px;flex:none;animation:sh .25s infinite}
+@keyframes sh{50%{transform:translateX(-50%) rotate(-4deg)}}
+#ov{z-index:10;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 30%,rgba(70,46,160,.75),rgba(8,10,24,.95));backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:16px}
+.card{max-width:380px;width:100%;display:flex;flex-direction:column;gap:10px;text-align:center}
+h1{margin:0;font-size:34px;line-height:1.1;text-shadow:0 3px 0 #5a3fd0,0 8px 26px rgba(139,108,255,.7)}
+.card p{margin:0;font-size:15px;line-height:1.4;text-align:left}
+.alt{background:#2b3560}
+button:active{transform:translateY(3px) scale(.97)}#pw{position:absolute;left:8px;bottom:calc(90px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:6px}#pw button{flex:none;width:80px;min-height:50px;font-size:20px;padding:2px}#pw button small{font-size:10px}.off{opacity:.35}#cb,#co{font-size:13px;white-space:nowrap}#fl{position:absolute;inset:0;pointer-events:none;opacity:0}
+[hidden]{display:none!important}
+
+#phone{position:absolute;right:8px;bottom:calc(82px + env(safe-area-inset-bottom,0px));width:218px;height:340px;z-index:5;background:#0b0d18;border:3px solid #2a2f55;border-radius:28px;box-shadow:0 12px 40px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden;transform:translateY(130%);transition:transform .3s cubic-bezier(.2,.9,.3,1);pointer-events:none}
+#phone.up{transform:none;pointer-events:auto}
+.pbar{display:flex;justify-content:space-between;padding:6px 14px 2px;font-size:11px;font-weight:700}
+#pscr{flex:1;overflow:hidden;padding:6px}
+#phome{flex:none;min-height:30px;border-radius:0;border:0;box-shadow:none;background:#12162b}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:8px}
+.ic{flex:none;min-height:84px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;padding:4px}.ic b{font-size:34px}
+.mh{text-align:center;font-size:13px;font-weight:800;margin-bottom:6px}
+.mg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.mg button{min-height:62px;font-size:30px;padding:0;background:#2d4a2a;border-color:#4d7a45;box-shadow:none}
+.tk{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;font-size:13px;background:linear-gradient(160deg,#25003d,#001b3d);border-radius:14px;height:100%}
+.tke{font-size:70px}.tkb{display:flex;gap:6px;width:100%;padding:0 6px;box-sizing:border-box}.tkb button{min-height:40px;font-size:13px}
+.chl{height:205px;overflow-y:auto;display:flex;flex-direction:column;gap:5px}
+.msg{background:#26304f;border-radius:12px;padding:5px 8px;font-size:12px;max-width:85%;align-self:flex-start}
+.msg small{display:block;opacity:.65;font-size:10px}.msg.me{align-self:flex-end;background:#4b3aa8}
+.cho{display:flex;flex-direction:column;gap:5px;margin-top:6px;font-size:11px}.cho button{min-height:34px;font-size:12px;border-radius:12px}
+.dr{font-size:12px;display:flex;flex-direction:column;gap:6px;padding:4px}
+
+.tks{height:100%;display:flex;align-items:center;justify-content:center;gap:4px;background:#000;border-radius:14px;font-size:28px;font-weight:900;animation:pop .5s}
+.tks b{color:#25f4ee;text-shadow:3px 2px 0 #fe2c55}.tks span{text-shadow:-2px 0 #25f4ee,2px 0 #fe2c55}
+@keyframes pop{from{transform:scale(.4);opacity:0}}
+.tkv{position:relative;height:100%;border-radius:14px;overflow:hidden;animation:up .25s;touch-action:none}
+@keyframes up{from{transform:translateY(25%);opacity:.3}}
+.tkt{position:absolute;top:6px;left:0;right:0;display:flex;justify-content:center;gap:12px;font-size:11px}
+.tke{position:absolute;top:34%;left:0;right:0;text-align:center;font-size:72px;animation:bob 1.4s infinite alternate}
+@keyframes bob{to{transform:translateY(-8px) scale(1.06)}}
+.tkr{position:absolute;right:4px;bottom:46px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.tkr button{flex:none;min-height:0;width:38px;padding:2px 0;background:transparent;border:0;box-shadow:none;font-size:22px;line-height:1}
+.tkr small{display:block;font-size:9px}
+.tkr i{font-style:normal;font-size:20px;background:#fff3;border-radius:50%;width:32px;height:32px;display:grid;place-items:center}
+.tkr .lkd{filter:drop-shadow(0 0 6px #fe2c55);animation:bob .3s 2 alternate}
+.tkb2{position:absolute;left:8px;bottom:6px;right:50px;font-size:11px;text-align:left}.tkb2 small{display:block;opacity:.8}
+#pscr{background:linear-gradient(160deg,#1b1450,#0b2a4a)}
+#qz{position:absolute;left:50%;top:18%;transform:translateX(-50%);z-index:9;width:min(300px,86%);box-sizing:border-box;background:rgba(14,17,34,.96);border:2px solid var(--warn);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:8px;text-align:center}
+#qz h3{margin:0}#qq{margin:0;font-size:26px;font-weight:900}
+#qa{font-size:22px;text-align:center;padding:8px;border-radius:12px;border:2px solid #4a55a0;background:#0b0d18;color:var(--tx);user-select:text;-webkit-user-select:text}
+#eat{position:absolute;left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));width:120px;height:120px;text-align:center;z-index:7;pointer-events:none;opacity:0;transform:translate(-50%,40px) scale(.6);transition:.2s}
+#eat.on{opacity:1;transform:translate(-50%,0) scale(1)}
+#eat span{display:block;font-size:84px;line-height:1;animation:chomp .35s infinite}
+@keyframes chomp{0%,100%{transform:scale(1,1) rotate(-4deg)}50%{transform:scale(1.12,.82) rotate(4deg)}}
+#eat i{position:absolute;top:70%;font-style:normal;font-size:16px;animation:fall .7s forwards}
+@keyframes fall{to{transform:translateY(60px) rotate(120deg);opacity:0}}
+</style></head><body>
+<div id="game"></div><div id="vig"></div>
+<div id="hud">
+ <div class="row"><b id="lv">Рів. 1</b><div class="bar"><i id="xpb" style="background:var(--ac)"></i></div><span id="tm">0:00</span></div>
+ <div class="row"><span>👀</span><div class="bar"><i id="sb" style="background:var(--bad);color:var(--bad)"></i></div><b id="cb">🔥0</b><b id="co">💰0</b><b id="hg">🍔30</b></div>
+ <div id="st" class="ok"></div>
+ <div class="row" id="tp" hidden><span>📝 Контрольна</span><div class="bar"><i id="tb" style="background:var(--ok)"></i></div><b id="tt">45</b></div>
+</div>
+<div id="toast"></div><div id="fl"></div><div id="pw"><button id="p1">🧠<small>Шпаргалка 6💰</small></button><button id="p2">😴<small>Відволікти 8💰</small></button><button id="p3">🍫<small>Спокій 5💰</small></button><button id="p4">🍔<small>Хавати</small></button></div>
+<button id="call" hidden>📞 Мама дзвонить! Відхилити</button>
+<div id="bar">
+ <div id="b1"><button id="tog">📱 Дістати телефон</button></div>
+ <div id="b2" hidden><button id="wr">✍️ Писати<small>тримай</small></button><button id="ch">👀 Списати<small>тримай, ризик!</small></button></div>
+</div>
+<div id="ov"><div class="card">
+ <h1 id="ot">Урок 8-Б 📱</h1>
+ <p id="od">Ти на уроці з телефоном під партою. Грай 🎮, гортай TikTok 🎵 і прокачуйся. Коли вчитель повертається ⚠️ — швидко ховай телефон! Раз на 5–10 хвилин буде 📝 КОНТРОЛЬНА: тримай ✍️ щоб писати або 👀 щоб списати (швидше, але ризиковано).</p>
+ <button id="go">▶ Грати (контрольна через 5–10 хв)</button>
+ <button id="go2" class="alt">⚡ Швидкий режим (контрольна через ~1 хв)</button>
+ <small id="ob"></small>
+</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>(function(){
+// core/setup.js — Рендерер, камера, світло, помічники
+const $=s=>document.querySelector(s),T=THREE,PI=Math.PI;
+const rnd=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const scene=new T.Scene();scene.background=new T.Color(0x1b2036);scene.fog=new T.Fog(0x1b2036,13,28);
+const cam=new T.PerspectiveCamera(70,1,.1,60);cam.rotation.order="YXZ";cam.position.set(0,1.55,3.7);scene.add(cam);
+const ren=new T.WebGLRenderer({antialias:true});ren.setPixelRatio(Math.min(devicePixelRatio||1,2));
+ren.shadowMap.enabled=true;ren.shadowMap.type=T.PCFSoftShadowMap;$("#game").appendChild(ren.domElement);
+function rs(){const w=innerWidth,h=innerHeight;ren.setSize(w,h);cam.aspect=w/h;cam.fov=w<h?92:66;cam.updateProjectionMatrix()}
+addEventListener("resize",rs);rs();
+document.addEventListener("contextmenu",e=>e.preventDefault());
+scene.add(new T.AmbientLight(0xffffff,.7));
+const sun=new T.DirectionalLight(0xfff2d6,.85);sun.position.set(-4,8,5);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-9,right:9,top:9,bottom:-9,near:1,far:25});sun.shadow.bias=-.0005;scene.add(sun);
+[-4,0,3].forEach(z=>{const l=new T.Mesh(new T.BoxGeometry(3,.06,.5),new T.MeshBasicMaterial({color:0xfff6d8}));l.position.set(0,4.97,z);scene.add(l)});
+function mk(w,h,d,c,x,y,z,p){const m=new T.Mesh(new T.BoxGeometry(w,h,d),new T.MeshLambertMaterial({color:c}));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;(p||scene).add(m);return m}
+
+// utils/feedback.js — Звук, тости, спалахи
+let ac;function beep(f,d,ty,v,dl){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+(dl||0);o.type=ty||"square";o.frequency.value=f;g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.001,t+(d||.12));o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+(d||.12))}catch(e){}}
+let tto;function toast(m,ms){const e=$("#toast");e.textContent=m;e.style.opacity=1;clearTimeout(tto);tto=setTimeout(()=>e.style.opacity=0,ms||2300)}
+function flash(c){const f=$("#fl");f.style.transition="none";f.style.background=c;f.style.opacity=.5;requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.transition="opacity .7s";f.style.opacity=0}))}
+
+// scene/room.js — Кімната, дошка
+mk(14,.2,16,0x9b7a55,0,-.1,-1);mk(14,.2,16,0xeeeeee,0,5.1,-1).castShadow=false;
+mk(14,5,.2,0xd8e0ee,0,2.5,-9);mk(.2,5,16,0xd8e0ee,-7,2.5,-1);mk(.2,5,16,0xd8e0ee,7,2.5,-1);
+[-5,-1,3].forEach(z=>mk(.05,1.7,2,0xbfe6ff,-6.88,2.8,z));
+mk(5.4,2.1,.1,0x7a5a3a,0,2.3,-8.88);
+const bc=document.createElement("canvas");bc.width=512;bc.height=170;const bx=bc.getContext("2d");
+bx.fillStyle="#1f5a43";bx.fillRect(0,0,512,170);bx.fillStyle="#fff";bx.font="bold 34px sans-serif";bx.fillText("Алгебра: квадратні",20,60);bx.fillText("рівняння  x² − 5x + 6",20,110);
+const bm=new T.Mesh(new T.PlaneGeometry(5,1.75),new T.MeshBasicMaterial({map:new T.CanvasTexture(bc)}));bm.position.set(0,2.3,-8.8);scene.add(bm);
+
+// scene/students.js — «живі» учні: пишуть, крутять головами, шепочуться, дрімають, тягнуть руку
+const STU=[],bubC={};
+function bub(e){
+ return bubC[e]||(bubC[e]=(()=>{
+  const c=document.createElement("canvas");c.width=c.height=64;
+  const x=c.getContext("2d");x.font="46px sans-serif";x.textAlign="center";x.textBaseline="middle";x.fillText(e,32,36);
+  return new T.SpriteMaterial({map:new T.CanvasTexture(c),transparent:true,depthTest:false});
+ })());
+}
+function studentsUpdate(dt,now){
+ const alert=G.run&&["warn","look","p2","p3"].includes(th.m);
+ STU.forEach(s=>{
+  s.t-=dt;
+  if(s.t<=0){
+   s.t=rnd(2.5,7);
+   const L=G.test?["write","write","look"]:["write","look","whisper","doze","hand","look"];
+   s.mood=L[Math.floor(Math.random()*L.length)];
+   const e={whisper:Math.random()<.5?"💬":"😂",hand:"🙋",doze:"😴"}[s.mood];
+   s.bb.visible=!!e;if(e)s.bb.material=bub(e);
+  }
+  const m=alert?"sit":s.mood,w=now/1000+s.p;
+  if(alert)s.bb.visible=false;
+  let hy=0,hx=0,lean=0,ax=0,az=.1;
+  if(m==="look")hy=Math.sin(w*.8)*.9;
+  if(m==="write"){hx=.35;ax=.9+Math.sin(w*9)*.15}
+  if(m==="whisper"){hy=s.side*.7;lean=s.side*.18}
+  if(m==="doze")hx=.6+Math.sin(w*1.5)*.05;
+  if(m==="hand")az=2.8;
+  const k=Math.min(1,dt*5);
+  s.head.rotation.y+=(hy-s.head.rotation.y)*k;s.head.rotation.x+=(hx-s.head.rotation.x)*k;
+  s.g.rotation.z+=(lean-s.g.rotation.z)*k;
+  s.arm.rotation.x+=(ax-s.arm.rotation.x)*k;s.arm.rotation.z+=(az-s.arm.rotation.z)*k;
+  s.g.position.y=Math.sin(w*1.6)*.01;
+ });
+}
+
+// scene/desks.js — парти й учні (кожен учень — група з головою, рукою й бульбашкою)
+const heads=[],sc=[0xe76f51,0x2a9d8f,0xe9c46a,0x8d5cf6,0x4cc9f0,0xf28482];
+const SKIN=[0xf1c9a5,0xd9a27a,0xf6d7b8,0xb98262],HAIR=[0x3a2a1a,0x1a1a1a,0x8a5a2b,0xd8b04a,0x6b2d1f];
+let si=0;
+[-2.6,0,2.6].forEach(x=>[2.8,.6,-1.6,-3.8].forEach(z=>{
+ mk(1.5,.08,.9,0xd2a86e,x,.85,z);
+ [[-.65,-.38],[.65,-.38],[-.65,.38],[.65,.38]].forEach(l=>mk(.06,.85,.06,0x555555,x+l[0],.42,z+l[1]));
+ if(x===0&&z===2.8)return;
+ mk(.5,.06,.5,0x4a5578,x,.5,z+.85);mk(.5,.6,.06,0x4a5578,x,.85,z+1.1);
+ const col=sc[si++%6],g=new T.Group(),hd=new T.Group(),ap=new T.Group();
+ g.position.set(x,0,z+.8);scene.add(g);
+ mk(.5,.7,.3,col,0,1,0,g);
+ hd.position.y=1.45;g.add(hd);
+ const h=new T.Mesh(new T.SphereGeometry(.2,12,10),new T.MeshLambertMaterial({color:SKIN[si%4]}));
+ h.position.y=.17;h.castShadow=true;hd.add(h);
+ mk(.38,.1,.36,HAIR[(si*3)%5],0,.34,0,hd);
+ ap.position.set(.3,1.3,0);g.add(ap);mk(.12,.55,.12,col,0,-.27,0,ap);
+ const bb=new T.Sprite(bub("💬"));bb.scale.set(.5,.5,.5);bb.position.set(0,2.15,0);bb.visible=false;g.add(bb);
+ STU.push({g,head:hd,arm:ap,bb,p:Math.random()*6,t:rnd(.5,4),mood:"write",side:x<0?-1:x>0?1:(Math.random()<.5?-1:1)});
+}));
+mk(.5,.01,.7,0xffffff,0,.9,2.7);mk(.5,.01,.35,0xfff59d,-2.6,.9,2.6);
+
+// scene/teacher-model.js — вчитель: лисий, суворий, в окулярах і з лінійкою
+const tg=new T.Group();scene.add(tg);
+mk(.6,.95,.4,0x1f6f78,0,1.2,0,tg);
+mk(.22,.75,.22,0x4a4f5a,-.14,.38,0,tg);mk(.22,.75,.22,0x4a4f5a,.14,.38,0,tg);
+mk(.14,.7,.14,0x1f6f78,-.38,1.2,0,tg);mk(.14,.7,.14,0x1f6f78,.38,1.2,0,tg);
+mk(.1,.5,.04,0xe0b030,0,1.28,.21,tg);
+const th0=new T.Mesh(new T.SphereGeometry(.26,16,12),new T.MeshLambertMaterial({color:0xf0c8a0}));
+th0.position.y=1.97;th0.castShadow=true;tg.add(th0);
+mk(.08,.12,.1,0x7a4a24,-.27,1.93,0,tg);mk(.08,.12,.1,0x7a4a24,.27,1.93,0,tg);
+mk(.17,.14,.03,0x111111,-.1,2,.245,tg);mk(.17,.14,.03,0x111111,.1,2,.245,tg);
+mk(.12,.09,.03,0xffffff,-.1,2,.26,tg);mk(.12,.09,.03,0xffffff,.1,2,.26,tg);
+mk(.05,.05,.03,0x111111,-.1,2,.28,tg);mk(.05,.05,.03,0x111111,.1,2,.28,tg);
+mk(.14,.025,.04,0x222222,-.1,2.1,.25,tg).rotation.z=-.4;mk(.14,.025,.04,0x222222,.1,2.1,.25,tg).rotation.z=.4;
+mk(.18,.04,.04,0x7a2e2e,0,1.88,.25,tg);
+mk(.05,.05,.8,0xd9b44a,.38,1.05,.38,tg);
+const mark=new T.Mesh(new T.SphereGeometry(.17,12,10),new T.MeshBasicMaterial({color:0xff2d55}));
+mark.position.y=2.7;mark.visible=false;tg.add(mark);
+
+// game/state.js — Стан гри, константи
+const APP=[{x:2.2,m:1},{x:3.2,m:1.35},{x:1.4,m:.65},{x:.5,m:.5}];
+const PERKS=["🤫 Беззвучний режим","🕶 Бічний зір","🎧 Прозорі навушники","🧥 Широкі рукави","🪞 Дзеркальна лінійка","😇 Погляд відмінника"];
+const ST={board:["✅ Вчитель пише на дошці","ok"],warn:["⚠️ Вчитель повертається!","warn"],look:["🚨 Вчитель дивиться на клас!","bad"],p1:["🚶 Вчитель пішов по ряду","warn"],p2:["🚶 Вчитель іде до тебе!","bad"],p3:["🚨 Вчитель стоїть над тобою!","bad"],p4:["✅ Вчитель повертається до дошки","ok"],p5:["✅ Вчитель повертається до дошки","ok"]};
+const DG={board:0,warn:0,look:1,p1:0,p2:.55,p3:1.8,p4:0,p5:0};
+let best=0;try{best=+localStorage.getItem("u8b")||0}catch(e){}
+let G,th={m:"board",t:4,next:"look"},pt=0;
+const need=()=>90+45*(G.lvl-1);
+function fmt(s){s=Math.floor(s);return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
+function reset(q){G={run:false,quick:q,lvl:1,xp:0,sus:0,time:0,up:false,app:0,hold:null,test:null,tests:0,calling:false,callT:0,nextTest:q?rnd(55,90):rnd(300,600),nextCall:rnd(30,60),coins:0,combo:0,calm:0,recess:0,warnUp:false,hunger:30,qcd:25,quiz:null,gr:0,nextRec:q?rnd(40,70):rnd(90,150)};
+ th.m="board";th.t=4;tg.position.set(0,0,-7.3);tg.rotation.y=PI;mark.visible=false;ui()}
+function ui(){const t=!!G.test;$("#b1").hidden=t;$("#b2").hidden=!t;$("#tp").hidden=!t;
+ phoneSync()}
+
+// game/teacher-ai.js — Поведінка вчителя
+function turn(a,dt){let d=a-tg.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));tg.rotation.y+=d*Math.min(1,dt*9)}
+function walk(tx,tz,dt,sp){const dx=tx-tg.position.x,dz=tz-tg.position.z,d=Math.hypot(dx,dz);if(d<.08)return true;const s=Math.min(d,sp*dt);tg.position.x+=dx/d*s;tg.position.z+=dz/d*s;turn(Math.atan2(dx,dz),dt);tg.position.y=Math.abs(Math.sin(G.time*9))*.05;return false}
+const setT=(m,t)=>{th.m=m;th.t=t||0};
+const warnT=()=>Math.max(.75,1.45-.06*G.lvl+.12*Math.floor(G.lvl/3));
+function updTeacher(dt){
+ const sp=2.3+.12*G.lvl,AX=1.3;th.t-=dt;
+ switch(th.m){
+ case"board":turn(PI,dt);tg.position.y=0;if(th.t<=0&&G.calm<=0){th.next=Math.random()<(G.test?.5:.28)+G.lvl*.02?"patrol":"look";setT("warn",warnT());G.warnUp=G.up||G.hold==="ch";mark.visible=true}break;
+ case"warn":turn(0,dt);if(th.t<=0){mark.visible=false;if(G.warnUp&&!G.up&&G.hold!=="ch"){G.combo++;const b=10*Math.min(G.combo,8);G.xp+=b;lvlCheck();toast("😎 Вчасно сховав! Серія "+G.combo+" (+"+b+" XP)",1100);flash("#8b6cff")}th.next==="look"?setT("look",rnd(2.2,3.6)):setT("p1")}break;
+ case"look":turn(0,dt);if(th.t<=0)setT("board",Math.max(2.2,rnd(4,7.5)-G.lvl*.3));break;
+ case"p1":if(walk(AX,-6.6,dt,sp))setT("p2");break;
+ case"p2":if(walk(AX,1.8,dt,sp))setT("p3",2.6);break;
+ case"p3":tg.position.y=0;turn(-PI/2,dt);if(th.t<=0)setT("p4");break;
+ case"p4":if(walk(AX,-6.6,dt,sp))setT("p5");break;
+ case"p5":if(walk(0,-7.3,dt,sp))setT("board",3);break}
+}
+
+// game/events.js — Контрольна, рівні, кінець гри
+function startTest(){const T0=G.quick?38:45;G.test={p:0,t:T0,tot:T0};G.up=false;G.hold=null;ui();beep(880,.2,"square",.07);beep(660,.3,"square",.07,.2);toast("📝 КОНТРОЛЬНА! Пиши ✍️ або списуй 👀 — і не спались!",3000)}
+function endTest(ok){const t=G.test;G.test=null;G.hold=null;ui();
+ if(!ok)return end("Не встиг дописати контрольну — двійка 😭");
+ const r=t.t/t.tot,g=r>.45?5:r>.2?4:3;G.tests++;G.xp+=150;G.sus*=.5;G.nextTest=G.quick?rnd(55,90):rnd(300,600);beep(660,.15,"triangle",.08);beep(990,.25,"triangle",.08,.15);toast("Контрольна здана! Оцінка: "+g+" 🎉",2800);lvlCheck()}
+function lvlCheck(){while(G.xp>=need()){G.xp-=need();G.lvl++;beep(520,.12,"triangle",.07);beep(780,.2,"triangle",.07,.12);flash("#ffd166");toast("⭐ Рівень "+G.lvl+"! "+PERKS[(G.lvl-2)%6]+": підозра −12%, попередження довше. Але вчитель теж стає хитрішим 😈",3200)}}
+function end(why){G.run=false;G.up=false;G.hold=null;beep(180,.5,"sawtooth",.08);
+ if(G.time>best){best=G.time;try{localStorage.setItem("u8b",String(best))}catch(e){}}
+ $("#ot").textContent="Кінець уроку 🔔";$("#od").textContent=why+"  Протримався "+fmt(G.time)+", рівень "+G.lvl+", контрольних здано: "+G.tests+".";
+ $("#go").textContent="↻ Ще раз (5–10 хв)";$("#ob").textContent="Рекорд: "+fmt(best);$("#ov").hidden=false;$("#call").hidden=true}
+
+// game/update.js — Оновлення гри кожен кадр
+function update(dt){
+ if(quizTick(dt))return;G.time+=dt;G.qcd-=dt;G.recess=Math.max(0,G.recess-dt);G.calm=Math.max(0,G.calm-dt);updTeacher(dt);
+ const d=G.recess>0?0:DG[th.m],using=G.up&&!G.test,cheat=G.test&&G.hold==="ch",eat=!G.test&&G.hold==="eat";let rate=0;
+ if(d>0&&(using||cheat||eat))rate=45*d*(using?APP[G.app].m:eat?1.2:1.5)*Math.pow(.88,G.lvl-1);
+ G.sus=clamp(G.sus+(rate>0?rate:-12)*dt,0,100);if(G.sus>70)G.combo=0;G.hunger=clamp(G.hunger+(eat?-26:1.4)*dt,0,100);if(eat)G.xp+=1.5*dt;G.gr-=dt;if(G.hunger>=90&&G.gr<=0){G.gr=5;G.sus=Math.min(99,G.sus+(d>0?25:12));toast("🤤 Живіт бурчить на весь клас!",1200);beep(120,.4,"sawtooth",.08)}if(G.sus>=70&&G.qcd<=0&&!G.quiz&&d>0)return quizStart();
+ if(G.sus>=100)return end("Вчитель забрав телефон 📵 і викликає батьків!");
+ if(using){const gx=APP[G.app].x*dt*(1+.25*Math.min(G.combo,8))*(G.recess>0?3:1);G.xp+=gx;G.coins+=gx/10;lvlCheck()}
+ if(G.test){const t=G.test;t.t-=dt;if(G.hold==="wr")t.p+=1.5*dt;if(G.hold==="ch")t.p+=5*dt;
+  if(t.p>=100)endTest(true);else if(t.t<=0)endTest(false)}
+ else{G.nextTest-=dt;if(G.nextTest<=0)startTest();G.nextRec-=dt;if(G.nextRec<=0){G.nextRec=G.quick?rnd(40,70):rnd(90,150);G.recess=9;beep(1200,.2,"triangle",.07);beep(1500,.3,"triangle",.07,.2);toast("🔔 ПЕРЕРВА! 9 секунд безпечно, XP ×3!",2400);flash("#38d996")}
+  if(!G.calling){G.nextCall-=dt;if(G.nextCall<=0){G.calling=true;G.callT=2.4;$("#call").hidden=false;beep(1000,.1,"square",.06);beep(1000,.1,"square",.06,.2)}}}
+ if(G.calling){G.callT-=dt;if(G.callT<=0){G.calling=false;$("#call").hidden=true;G.sus=Math.min(99,G.sus+35);G.nextCall=rnd(40,90);toast("📞 Мама зателефонувала на весь клас!");beep(300,.3,"sawtooth",.08)}}
+ hud();
+}
+
+// ui/hud.js — HUD
+function hud(){phoneSync();eatSync();$("#lv").textContent="Рів. "+G.lvl;$("#xpb").style.width=G.xp/need()*100+"%";$("#sb").style.width=G.sus+"%";$("#tm").textContent=fmt(G.time);
+ $("#hg").textContent="🍔"+Math.round(G.hunger);$("#cb").textContent="🔥"+G.combo;$("#co").textContent="💰"+Math.floor(G.coins);["p1","p2","p3"].forEach((id,i)=>$("#"+id).classList.toggle("off",G.coins<[6,8,5][i]||(i==0&&!G.test)));const s=G.recess>0?["🔔 ПЕРЕРВА! XP ×3 — відривайся!","ok"]:ST[th.m],e=$("#st");e.textContent=s[0];e.className=s[1];$("#vig").style.opacity=clamp((G.sus-25)/75,0,1)*.9;
+ if(G.test){$("#tb").style.width=G.test.p+"%";$("#tt").textContent=Math.ceil(G.test.t)+"с"}}
+
+// ui/eat-anim.js — анімація поїдання: бургер «кусається», летять крихти
+const eatEl=document.createElement("div");
+eatEl.id="eat";eatEl.innerHTML="<span>🍔</span>";
+document.body.appendChild(eatEl);
+let eatI=null;
+function eatSync(){
+ const on=!!(G&&G.run&&!G.test&&G.hold==="eat");
+ if(eatEl.classList.contains("on")===on)return;
+ eatEl.classList.toggle("on",on);
+ clearInterval(eatI);
+ if(on)eatI=setInterval(()=>{
+  const c=document.createElement("i");
+  c.textContent=["·","🍞","•"][Math.floor(Math.random()*3)];
+  c.style.left=30+Math.random()*40+"%";eatEl.appendChild(c);
+  setTimeout(()=>c.remove(),700);
+ },140);
+}
+
+// game/anim.js — камера від першої особи (очі учня на стільці) та дрібна анімація
+function anim(dt){
+ const now=performance.now(),kk=Math.min(1,dt*6),ps=G.run?th.m:"";
+ const yaw=G.hold==="ch"?.78:(ps==="p2"||ps==="p3")?-.5:0;
+ const pitch=G.test?(G.hold==="wr"?-.5:-.15):(G.up&&G.run?-.25:-.04);
+ cam.rotation.y+=(yaw-cam.rotation.y)*kk;
+ cam.rotation.x+=(pitch-cam.rotation.x)*kk;
+ cam.position.y=1.55+Math.sin(now/900)*.012;
+ cam.position.x=G.sus>70?(Math.random()-.5)*.03:0;
+ heads.forEach(h=>h.m.position.y=h.y+Math.sin(now/700+h.p)*.012);
+ mark.scale.setScalar(1+Math.sin(now/90)*.2);studentsUpdate(dt,now);
+}
+
+// game/quiz.js — вчитель сильно підозрює: викликає до дошки, треба вписати відповідь на легкий приклад
+const QZ=[["7 × 8","56"],["15 − 9","6"],["12 + 29","41"],["6 × 6","36"],["x + 5 = 12, x ","7"],["√49","7"],["3 × 14","42"],["100 − 37","63"]];
+const qbox=document.createElement("div");
+qbox.id="qz";qbox.hidden=true;
+qbox.innerHTML='<h3>👨‍🏫 До дошки!</h3><p id="qq"></p><input id="qa" inputmode="numeric" autocomplete="off" placeholder="відповідь"><button id="qb">Відповісти</button><div class="bar"><i id="qt" style="background:var(--warn);width:100%"></i></div>';
+document.body.appendChild(qbox);
+function quizStart(){
+ const q=QZ[Math.floor(Math.random()*QZ.length)];
+ G.quiz={a:q[1],t:12,tot:12};G.up=false;G.hold=null;ui();eatSync();
+ $("#qq").textContent=q[0]+" = ?";$("#qa").value="";qbox.hidden=false;
+ beep(300,.2,"square",.07);toast("😠 Вчитель підозрює тебе й викликає до дошки!",2200);
+ setTimeout(()=>$("#qa").focus(),150);
+}
+function quizEnd(){G.quiz=null;qbox.hidden=true;$("#qa").blur()}
+function quizTick(dt){
+ const z=G.quiz;if(!z)return false;
+ z.t-=dt;$("#qt").style.width=Math.max(0,z.t/z.tot*100)+"%";
+ if(z.t<=0){quizEnd();end("Не відповів біля дошки — двійка й виклик батьків 😭")}
+ return true;
+}
+$("#qb").onclick=()=>{
+ const z=G.quiz;if(!z)return;
+ if($("#qa").value.trim()===z.a){
+  quizEnd();G.sus=25;G.qcd=45;G.xp+=60;lvlCheck();
+  beep(660,.15,"triangle",.08);toast("✅ Правильно! Вчитель заспокоївся",2200);flash("#38d996");
+ }else{z.t-=2;$("#qa").value="";toast("❌ Неправильно, подумай ще!",900)}
+};
+$("#qa").onkeydown=e=>{if(e.key==="Enter")$("#qb").click()};
+
+// phone/phone.js — клікабельний телефон: оболонка, головний екран, перемикання застосунків
+const APPS=[
+ {id:0,ico:"🐹",name:"Бий хом’яка",open:moleOpen},
+ {id:1,ico:"🎵",name:"TikTok",open:tiktokOpen},
+ {id:2,ico:"💬",name:"Чат",open:chatOpen},
+ {id:3,ico:"📓",name:"Щоденник",open:diaryOpen}];
+const phone=document.createElement("div");
+phone.id="phone";phone._on=false;
+phone.innerHTML='<div class="pbar"><span>8:45</span><span>📶 🔋</span></div><div id="pscr"></div><button id="phome">⏺</button>';
+document.body.appendChild(phone);
+const pscr=phone.querySelector("#pscr");
+
+function stopApps(){moleStop();chatStop();tiktokStop()}
+function phoneHome(){
+ G.app=3;stopApps();
+ pscr.innerHTML='<div class="grid">'+APPS.map(a=>`<button class="ic" data-i="${a.id}"><b>${a.ico}</b>${a.name}</button>`).join("")+"</div>";
+ pscr.querySelectorAll(".ic").forEach(b=>b.onclick=()=>phoneOpen(+b.dataset.i));
+}
+function phoneOpen(id){
+ G.app=id;stopApps();pscr.innerHTML="";
+ APPS[id].open(pscr);beep(520,.05,"triangle",.04);
+}
+function phoneSync(){
+ const up=!!(G&&G.run&&G.up&&!G.test);
+ if(phone._on===up)return;
+ phone._on=up;phone.classList.toggle("up",up);
+ $("#tog").textContent=up?"⬇️ Сховати телефон":"📱 Дістати телефон";
+ if(up)phoneHome();else stopApps();
+}
+$("#phome").onclick=()=>{if(G.up)phoneHome()};
+
+// phone/mole.js — міні-гра «Бий хом’яка»: тапай по хом’яку
+let moleT=null;
+function moleOpen(el){
+ let score=0,cur=-1;
+ el.innerHTML='<div class="mh">Бий хом’яка! 🔨 <b id="msc">0</b></div><div class="mg">'+"<button></button>".repeat(9)+"</div>";
+ const c=[...el.querySelectorAll(".mg button")];
+ moleT=setInterval(()=>{
+  if(cur>=0)c[cur].textContent="";
+  cur=Math.floor(Math.random()*9);c[cur].textContent="🐹";
+ },850);
+ c.forEach((b,i)=>b.onclick=()=>{
+  if(i!==cur)return;
+  b.textContent="💥";cur=-1;score++;
+  el.querySelector("#msc").textContent=score;
+  G.xp+=4+G.combo;G.coins+=.5;lvlCheck();
+  beep(600+score*20,.06,"triangle",.05);
+ });
+}
+function moleStop(){clearInterval(moleT)}
+
+// phone/tiktok.js — TikTok: заставка, вертикальне відео, бічні кнопки, свайп, 1 лайк на відео
+const VIDEOS=[
+ ["🐱","Кіт vs пилосос","@mur_mur","Funny Cat Remix","12,4K","318"],["🤡","Вчитель фізики танцює","@ua_school","Dance Monkey","98K","2,1K"],
+ ["🍕","Піца за 5 секунд","@food_ua","Cooking Beat","7,2K","90"],["🏀","Кидок з-за спини","@hoop_ua","Stadium Mix","45K","700"],
+ ["🦫","Капібара у ванні","@kapibara_ua","Chill Lo-fi","310K","8,4K"],["🧪","Що не можна змішувати","@lab_ua","Science Sound","23K","451"],
+ ["🎸","Рифф за 10 секунд","@riff_ua","Rock Short","5,6K","77"],["😴","Коли шостий урок","@memes_ua","Sad Violin","151K","3,3K"]];
+const COMM=["😂😂😂","це я на уроці","перший!","хто тут о 8:45?","це шедевр","🔥🔥🔥","мама, я в телефоні"];
+let tkI=0,tkT=null;const tkLiked=new Set();
+function tiktokStop(){clearTimeout(tkT)}
+function tiktokOpen(el){
+ tkI=Math.floor(Math.random()*VIDEOS.length);
+ el.innerHTML='<div class="tks"><b>♪</b><span>TikTok</span></div>';
+ tkT=setTimeout(()=>tkFeed(el),1200);
+}
+function tkFeed(el){
+ const id=tkI%VIDEOS.length,v=VIDEOS[id],h=(tkI*47)%360,lk=tkLiked.has(id);
+ el.innerHTML=`<div class="tkv" style="background:linear-gradient(170deg,hsl(${h},70%,28%),hsl(${(h+60)%360},60%,12%))">
+  <div class="tkt"><span>Підписки</span><b>Для тебе</b></div><div class="tke">${v[0]}</div>
+  <div class="tkr"><i>👤</i><button id="lk" class="${lk?"lkd":""}">${lk?"❤️":"🤍"}<small>${v[4]}</small></button>
+   <button id="cm">💬<small>${v[5]}</small></button><button id="sh">↗<small>Поділ.</small></button></div>
+  <div class="tkb2"><b>${v[1]?v[2]:""}</b><div>${v[1]}</div><small>♪ ${v[3]}</small></div></div>`;
+ const like=()=>{
+  if(tkLiked.has(id))return toast("Ти вже лайкнув це відео ❤️",800);
+  tkLiked.add(id);G.xp+=3;G.coins+=.3;lvlCheck();beep(800,.06,"triangle",.05);tkFeed(el);
+ };
+ el.querySelector("#lk").onclick=like;
+ el.querySelector("#cm").onclick=()=>toast("💬 "+COMM[Math.floor(Math.random()*COMM.length)],1200);
+ el.querySelector("#sh").onclick=()=>toast("↗ Скинув Максиму",900);
+ const box=el.querySelector(".tkv");let y0=0,t0=0;
+ box.onpointerdown=e=>{y0=e.clientY};
+ box.onpointerup=e=>{
+  if(y0-e.clientY>40){tkI++;G.xp+=2;tkFeed(el)}
+  else if(e.target===box||e.target.className==="tke"){const n=Date.now();if(n-t0<350)like();t0=n}
+ };
+}
+
+// phone/chat.js — переписка починається, коли відкриваєш чат; відповіді — кнопками
+const SC={
+ a:{m:[["Максим","ей, ти тут? 👀"],["Максим","Іванівна готує контрольну 😱"]],o:[["Скинь відповіді 🙏","b"],["Та ну, граємо 🎮","c"]]},
+ b:{m:[["Максим","тримай шпаргалку 📄 тільки тихо!"]],o:[["Дякую, друже!","*","cheat"]]},
+ c:{m:[["Максим","Ну як хочеш 😅"],["Максим","лови мем 🤡"]],o:[["Хаха 😂","*","meme"]]},
+ f:{m:[["Оля","на великій перерві йдемо в їдальню?"]],o:[["Так 🍕","g"],["Ні, я зайнятий 📱","*"]]},
+ g:{m:[["Оля","тоді займи мені чергу 😏"],["Оля","і купи булочку"]],o:[["Добре!","*","coin"]]},
+ h:{m:[["Група 8-Б","📢 Домашка на завтра: §24"],["Тимур","та кого це хвилює 💀"]],o:[["👍","*"],["Тихіше, вчитель!","*","calm"]]},
+ k:{m:[["Мама","Синку, ти поїв? 🍲"],["Мама","і не сиди в телефоні на уроці!"]],o:[["Мам, я на уроці 😬","*","calm"]]}};
+const STARTS=["a","f","h","k"];
+const FX={
+ cheat:()=>{G.coins+=6;toast("📄 Шпаргалка! +6💰")},
+ meme:()=>{G.xp+=25;lvlCheck();toast("🤡 +25 XP")},
+ coin:()=>{G.coins+=3;toast("🍕 +3💰")},
+ calm:()=>{G.sus=Math.max(0,G.sus-15);toast("🤫 Підозра −15")}};
+let chT=[];
+function chatStop(){chT.forEach(clearTimeout);chT=[]}
+function chatOpen(el){
+ chatStop();
+ el.innerHTML='<div class="chl"></div><div class="cho"></div>';
+ const L=el.querySelector(".chl"),O=el.querySelector(".cho");
+ const add=(n,t)=>{
+  const p=document.createElement("div");
+  p.className="msg"+(n==="Ти"?" me":"");p.innerHTML="<small>"+n+"</small>"+t;
+  L.appendChild(p);L.scrollTop=1e5;beep(900,.04,"sine",.03);
+ };
+ const say=k=>{
+  const sc=SC[k];let d=0;O.innerHTML="<i>друкує…</i>";
+  sc.m.forEach(([n,t])=>{d+=1100;chT.push(setTimeout(()=>add(n,t),d))});
+  chT.push(setTimeout(()=>{
+   O.innerHTML="";
+   sc.o.forEach(([l,nx,fx])=>{
+    const b=document.createElement("button");b.textContent=l;
+    b.onclick=()=>{
+     O.innerHTML="";add("Ти",l);if(fx)FX[fx]();
+     say(nx==="*"?STARTS[Math.floor(Math.random()*STARTS.length)]:nx);
+    };
+    O.appendChild(b);
+   });
+  },d+500));
+ };
+ say("a");
+}
+
+// phone/diary.js — щоденник: статистика й досягнення
+function diaryOpen(el){
+ const A=[
+  [G.lvl>=3,"⭐ Рівень 3"],[G.lvl>=6,"🌟 Рівень 6"],[G.tests>=1,"📝 Перша контрольна"],
+  [G.tests>=3,"🎓 Три контрольні"],[G.combo>=3,"🔥 Серія ×3"],
+  [G.time>=300,"⏱ 5 хвилин живим"],[G.coins>=10,"💰 10 монет"]];
+ el.innerHTML=`<div class="dr"><b>📓 Щоденник</b><div>Рівень ${G.lvl} · Контрольних: ${G.tests}</div>`
+  +A.map(a=>`<div>${a[0]?"🏅":"🔒"} ${a[1]}</div>`).join("")+"</div>";
+}
+
+// ui/controls.js — Кнопки й утримання
+$("#tog").onclick=()=>{if(!G.run||G.test)return;G.up=!G.up;if(G.up)G.app=3;ui();beep(500,.05,"triangle",.04)};
+$("#call").onclick=()=>{G.calling=false;G.nextCall=rnd(40,90);$("#call").hidden=true;beep(400,.1,"triangle",.05);toast("Відхилено 👍")};
+function buy(c,f){if(!G.run||G.coins<c)return;G.coins-=c;f();beep(700,.1,"triangle",.06);hud()}
+$("#p1").onclick=()=>{if(G.test)buy(6,()=>{G.test.p=Math.min(100,G.test.p+28);toast("🧠 Шпаргалка: +28%",1200)})};
+$("#p2").onclick=()=>buy(8,()=>{G.calm=8;mark.visible=false;if(th.m==="look"||th.m==="warn")setT("board",3);else if(th.m==="p1"||th.m==="p2"||th.m==="p3")setT("p4");toast("😴 Вчителя відволікли на 8 с",1400)});
+$("#p3").onclick=()=>buy(5,()=>{G.sus=Math.max(0,G.sus-40);toast("🍫 Заспокоївся: підозра −40",1200)});
+function hold(el,n){el.addEventListener("pointerdown",e=>{e.preventDefault();G.hold=n;el.classList.add("on")});
+ ["pointerup","pointercancel","pointerleave"].forEach(ev=>el.addEventListener(ev,()=>{if(G.hold===n)G.hold=null;el.classList.remove("on")}))}
+hold($("#p4"),"eat");hold($("#wr"),"wr");hold($("#ch"),"ch");
+
+// main.js — Точка входу: старт і цикл
+function start(q){reset(q);G.run=true;$("#ov").hidden=true;beep(600,.1,"triangle",.06);toast("Дістань телефон 🎮🎵💬 — але стеж за вчителем!",2600)}
+$("#go").onclick=()=>start(false);$("#go2").onclick=()=>start(true);
+$("#ob").textContent=best?"Рекорд: "+fmt(best):"";
+reset(false);hud();
+let last=performance.now();
+function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/1000);last=now;if(G.run)update(dt);anim(dt);ren.render(scene,cam)}
+requestAnimationFrame(loop);
+
+})();</script></body></html>
